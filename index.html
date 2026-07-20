@@ -147,7 +147,7 @@
   /* ---------- Stats ---------- */
   .stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
   .stat-card {
@@ -511,6 +511,13 @@
     max-width: 620px;
     margin: 0 auto 1.2rem;
   }
+  .note .note-open {
+    font-family: var(--serif); font-weight: 700;
+    font-size: clamp(1.5rem, 4.2vw, 2.15rem); line-height: 1.2;
+    color: var(--ink); max-width: none; margin-bottom: 1.6rem;
+  }
+  .note .note-open em { font-style: italic; color: var(--rose); }
+  .note .note-hb { font-weight: 600; color: var(--ink); }
   .note .signoff { font-size: 1.3rem; font-weight: 700; color: var(--rose); }
 
   .cake-btn {
@@ -691,193 +698,6 @@
     <a class="scroll-hint" href="#story" aria-label="Scroll down">⌄</a>
   </header>
 
-  <!-- STATS -->
-  <section>
-    <h2>Maddie, <span>by the numbers</span></h2>
-    <div class="stats">
-      <div class="stat-card">
-        <div class="value" id="stat-age">–</div>
-        <div class="label">Years old</div>
-        <div class="meta">born 07·25·1987</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-together">–</div>
-        <div class="label">Years together</div>
-        <div class="meta">since 2004</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-married">–</div>
-        <div class="label">Years married</div>
-        <div class="meta">since 11·05·2015</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-days">–</div>
-        <div class="label">Days married</div>
-        <div class="meta">and counting</div>
-      </div>
-      <div class="stat-card">
-        <div class="value">2</div>
-        <div class="label">Dogs</div>
-        <div class="meta">Tao &amp; Raven</div>
-      </div>
-      <div class="stat-card">
-        <div class="value">0</div>
-        <div class="label">Kids</div>
-        <div class="meta">two dogs instead</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TIMELINE -->
-  <section id="story">
-    <h2>Our <span>story</span></h2>
-    <div class="timeline">
-      <div class="event">
-        <div class="year">July 25, 1987</div>
-        <h3>Born</h3>
-        <p>1:29 p.m., Janesville, WI. Leo sun, Leo moon.</p>
-      </div>
-      <div class="event">
-        <div class="year">2004</div>
-        <h3>We met</h3>
-        <p>Neither of us knew what we were starting.</p>
-      </div>
-      <div class="event">
-        <div class="year">The proposal</div>
-        <h3>Parfrey's Glen</h3>
-        <p>In the gorge, back in Wisconsin. She said yes.</p>
-      </div>
-      <div class="event">
-        <div class="year">Nov 5, 2015</div>
-        <h3>Married in Jamaica</h3>
-        <p>On a beach. Easiest decision I've made.</p>
-      </div>
-      <div class="event">
-        <div class="year">2026</div>
-        <h3>Then Florida</h3>
-        <p>Traveled the country, then planted here.</p>
-      </div>
-      <div class="event">
-        <div class="year">Today</div>
-        <h3>Now</h3>
-        <p>Two decades, two dogs. Still choosing you.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- PASSIONS -->
-  <section>
-    <h2>Things she's <span>into</span></h2>
-    <div class="passions">
-      <div class="passion">
-        <span class="icon">☸️</span>
-        <h3>Taoism</h3>
-        <p>Reads it, sits with it, actually practices it.</p>
-      </div>
-      <div class="passion">
-        <span class="icon">📖</span>
-        <h3>Reading</h3>
-        <p>Always mid-book. Usually mid-stack of books.</p>
-      </div>
-      <div class="passion">
-        <span class="icon">🎨</span>
-        <h3>Art &amp; Painting</h3>
-        <p>Paints. Leaves the good kind of mess behind.</p>
-      </div>
-      <div class="passion">
-        <span class="icon">🌿</span>
-        <h3>Nature</h3>
-        <p>Happiest outside, phone left indoors.</p>
-      </div>
-      <div class="passion">
-        <span class="icon">🌸</span>
-        <h3>Butterflies &amp; Flowers</h3>
-        <p>Will stop the whole walk for a good one.</p>
-      </div>
-      <div class="passion">
-        <span class="icon">🥑</span>
-        <h3>Good Food</h3>
-        <p>Cooking real, healthy food together &mdash; and actually enjoying it.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- PHILOSOPHY / MANTRA -->
-  <section class="philosophy">
-    <div class="inner">
-      <h2>What we <span>live by</span></h2>
-      <div class="divider"></div>
-      <p class="section-lead">Harmony, self-mastery, and cutting away the excess.</p>
-
-      <div class="pillars">
-        <div class="pillar">
-          <div class="sym">☯</div>
-          <h3>Taoism</h3>
-          <div class="tao-tag">Harmony with nature</div>
-          <p>Flow with things instead of forcing them. Move with the current, not against it.</p>
-        </div>
-        <div class="pillar">
-          <div class="sym">🏛</div>
-          <h3>Stoicism</h3>
-          <div class="tao-tag">Rational virtue</div>
-          <p>Control what you can, accept what you can't, and keep your reason steady through both.</p>
-        </div>
-        <div class="pillar">
-          <div class="sym">⚪</div>
-          <h3>Minimalism</h3>
-          <div class="tao-tag">Less, but better</div>
-          <p>Strip away the excess &mdash; in things, in noise, in obligations &mdash; and keep only what earns its place.</p>
-        </div>
-      </div>
-
-      <ol class="mantra">
-        <li>
-          <span class="line">Live simply.</span>
-          <span class="tag">Minimalism &bull; Taoism</span>
-        </li>
-        <li>
-          <span class="line">Reflect daily on your thoughts, your actions, and what truly matters.</span>
-          <span class="tag">Stoicism</span>
-        </li>
-        <li>
-          <span class="line">Let go of rigid plans and expectations.</span>
-          <span class="tag">Taoism &bull; Stoicism</span>
-        </li>
-        <li>
-          <span class="line">Focus only on the essentials &mdash; in thought, in action, in what you own.</span>
-          <span class="tag">All three</span>
-        </li>
-      </ol>
-
-      <p class="summary">All three point the same way: <b>keep only what matters</b>.</p>
-    </div>
-  </section>
-
-  <!-- DOGS -->
-  <section>
-    <h2>The <span>dogs</span></h2>
-    <div class="dogs">
-      <div class="dog-card">
-        <div class="dog-photo">
-          <span class="paw-badge">🐾</span>
-          <img src="img/tao.jpg" alt="Tao, the border collie" loading="lazy">
-        </div>
-        <h3>Tao</h3>
-        <div class="breed">Border Collie &bull; b. 2025 &bull; the puppy</div>
-        <p>The new kid. Already herding everyone into one room and standing by for further instructions.</p>
-      </div>
-      <div class="dog-card">
-        <div class="dog-photo">
-          <span class="paw-badge">🐾</span>
-          <img src="img/raven.jpg" alt="Raven, the German shepherd" loading="lazy">
-        </div>
-        <h3>Raven</h3>
-        <div class="breed">German Shepherd &bull; b. 2021 &bull; head of security</div>
-        <p>Perimeter checked twice. No squirrel has gotten past her yet, and she intends to keep it that way.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- COSMOS / STAR CHART -->
   <section class="cosmos-wrap">
     <div class="cosmos-stars" id="cosmos-stars"></div>
@@ -958,31 +778,105 @@
     </div>
   </section>
 
-  <!-- LOVE NOTE -->
+  <!-- STATS -->
   <section>
-    <h2>A note from <span>Bob</span></h2>
-    <div class="note">
-      <p>
-        Maddie &mdash; a proposal in the gorge at Parfrey's Glen, a beach in Jamaica, a year
-        on the road, and now Florida. Two dogs, no kids, a lot of good food, and a lot of
-        ordinary days I wouldn't trade for anything.
-      </p>
-      <p>
-        We're each other's best friend and we don't take that for granted &mdash; we actually
-        appreciate each other. After twenty-some years, that still feels like the whole point.
-        Happy birthday, Mad.
-      </p>
-      <div class="signoff">&mdash; Bob</div>
-      <br>
-      <button class="cake-btn" id="open-coupon">🎁 Open your gift</button>
+    <h2>Maddie, <span>by the numbers</span></h2>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="value" id="stat-age">–</div>
+        <div class="label">Years old</div>
+        <div class="meta">born 07·25·1987</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-together">–</div>
+        <div class="label">Years together</div>
+        <div class="meta">since 2004</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-married">–</div>
+        <div class="label">Years married</div>
+        <div class="meta">since 11·05·2015</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-days">–</div>
+        <div class="label">Days married</div>
+        <div class="meta">and counting</div>
+      </div>
     </div>
   </section>
 
-  <!-- FAVORITE PERSON -->
-  <section class="favorite">
-    <div class="inner">
-      <p>You're my favorite person.</p>
-      <div class="by">&mdash; Bob, as always</div>
+  <!-- TIMELINE -->
+  <section id="story">
+    <h2>Our <span>story</span></h2>
+    <div class="timeline">
+      <div class="event">
+        <div class="year">July 25, 1987</div>
+        <h3>Born</h3>
+        <p>1:29 p.m., Janesville, WI. Leo sun, Leo moon.</p>
+      </div>
+      <div class="event">
+        <div class="year">2004</div>
+        <h3>We met</h3>
+        <p>Neither of us knew what we were starting.</p>
+      </div>
+      <div class="event">
+        <div class="year">The proposal</div>
+        <h3>Parfrey's Glen</h3>
+        <p>In the gorge, back in Wisconsin. She said yes.</p>
+      </div>
+      <div class="event">
+        <div class="year">Nov 5, 2015</div>
+        <h3>Married in Jamaica</h3>
+        <p>On a beach. Easiest decision I've made.</p>
+      </div>
+      <div class="event">
+        <div class="year">2026</div>
+        <h3>Then Florida</h3>
+        <p>Traveled the country, then planted here.</p>
+      </div>
+      <div class="event">
+        <div class="year">Today</div>
+        <h3>Now</h3>
+        <p>Two decades, two dogs. Still choosing you.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOGS -->
+  <section>
+    <h2>The <span>dogs</span></h2>
+    <div class="dogs">
+      <div class="dog-card">
+        <div class="dog-photo">
+          <span class="paw-badge">🐾</span>
+          <img src="img/tao.jpg" alt="Tao, the border collie" loading="lazy">
+        </div>
+        <h3>Tao</h3>
+        <div class="breed">Border Collie &bull; b. 2025 &bull; the puppy</div>
+        <p>The new kid. Already herding everyone into one room and standing by for further instructions.</p>
+      </div>
+      <div class="dog-card">
+        <div class="dog-photo">
+          <span class="paw-badge">🐾</span>
+          <img src="img/raven.jpg" alt="Raven, the German shepherd" loading="lazy">
+        </div>
+        <h3>Raven</h3>
+        <div class="breed">German Shepherd &bull; b. 2021 &bull; head of security</div>
+        <p>Perimeter checked twice. No squirrel has gotten past her yet, and she intends to keep it that way.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOVE NOTE -->
+  <section>
+    <div class="note">
+      <p class="note-open">Maddie &mdash; <em>you're my favorite person.</em></p>
+      <p>Two dogs, no kids, a lot of good food, adventure, and a lot of ordinary days I wouldn't trade for anything.</p>
+      <p>We're each other's best friend and we don't take that for granted &mdash; we actually appreciate each other. After twenty-some years, that still feels like the whole point.</p>
+      <p class="note-hb">Happy birthday, Maddie! I love you!</p>
+      <div class="signoff">&mdash; Love, Bob</div>
+      <br>
+      <button class="cake-btn" id="open-coupon">🎁 Open your gift</button>
     </div>
   </section>
 
