@@ -30,17 +30,13 @@
   html { scroll-behavior: smooth; background: #0a0713; }
   body {
     font-family: var(--sans);
-    background: linear-gradient(165deg, #fde8ef 0%, #f5e6ff 46%, #e8f3ff 100%);
+    background: #0a0713;
     color: var(--ink);
-    overflow-x: hidden;
-    min-height: 100vh;
+    overflow: hidden;   /* the deck is a fixed flip-card stack — the page itself doesn't scroll */
+    height: 100%;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- Scroll reveal (fade only — no positional shift) ---------- */
-  .reveal { opacity: 0; transition: opacity .7s ease; }
-  .reveal.in { opacity: 1; }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transition: none; } }
 
   /* ---------- Hero ---------- */
   .hero {
@@ -112,13 +108,6 @@
   .countdown .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .16em; color: rgba(255,255,255,.8); margin-top: .3rem; }
   .countdown-title { margin-top: 2.2rem; font-size: .92rem; color: rgba(255,255,255,.9); text-transform: uppercase; letter-spacing: .22em; animation: fade-up 1.2s .5s ease both; }
   .countdown-when { margin-top: .45rem; font-family: var(--serif); font-size: 1.25rem; font-weight: 700; color: var(--gold); letter-spacing: .02em; text-shadow: 0 2px 14px rgba(0,0,0,.45); animation: fade-up 1.2s .55s ease both; }
-
-  .scroll-hint {
-    position: absolute; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
-    font-size: 1.6rem; color: rgba(255,255,255,.9);
-    animation: bob 1.6s ease-in-out infinite; text-decoration: none; z-index: 1;
-  }
-  @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 8px); } }
 
   /* ---------- Sections ---------- */
   section {
@@ -609,7 +598,36 @@
     90% { opacity: .4; }
     100% { transform: translateY(-110vh) rotate(40deg); opacity: 0; }
   }
-  .content { position: relative; z-index: 1; }
+  /* ---------- Flip-card deck: each section is a full-screen static card ---------- */
+  .content {
+    position: fixed; inset: 0; z-index: 1;
+    overflow: hidden;
+    perspective: 2000px;
+    background: #0a0713;
+  }
+  .content > header,
+  .content > section {
+    position: absolute; inset: 0;
+    max-width: none; margin: 0; width: 100%; height: 100%;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column; justify-content: safe center;
+    backface-visibility: hidden;
+    transform-origin: center center;
+    transform: rotateX(-92deg);   /* parked below, folded away */
+    opacity: 0; pointer-events: none;
+    transition: transform .6s cubic-bezier(.46,.03,.24,1), opacity .4s ease;
+    z-index: 1;
+  }
+  .content > .card-current { transform: rotateX(0deg); opacity: 1; pointer-events: auto; z-index: 2; }
+  .content > .card-prev    { transform: rotateX(92deg);  opacity: 0; }   /* folded up, above */
+  .content > .card-next    { transform: rotateX(-92deg); opacity: 0; }   /* folded down, below */
+  @media (prefers-reduced-motion: reduce) {
+    .content > header, .content > section { transition: opacity .3s ease; transform: none; }
+    .content > .card-current { transform: none; }
+    .content > .card-prev, .content > .card-next { transform: none; }
+  }
+  /* light-section cards need an opaque background so the flip doesn't show through */
+  .flock { background: linear-gradient(165deg, #fde8ef 0%, #f5e6ff 46%, #e8f3ff 100%); }
 
   /* On "Our story", the only background is the drifting pages/books */
   body.story-view .heart-bg,
@@ -722,7 +740,7 @@
 
 <div class="content">
   <!-- HERO -->
-  <header class="hero">
+  <header class="hero card-current">
     <div class="hero-bg" role="img" aria-label="Maddie and her husband on the beach in Jamaica"></div>
     <h1>Happy Birthday,<br><em>Maddie</em></h1>
     <p class="subtitle">It's your birthday. I built you a website instead of buying a card.</p>
@@ -734,7 +752,6 @@
       <div class="unit"><div class="num" id="cd-mins">–</div><div class="label">Minutes</div></div>
       <div class="unit"><div class="num" id="cd-secs">–</div><div class="label">Seconds</div></div>
     </div>
-    <a class="scroll-hint" href="#story" aria-label="Scroll down">⌄</a>
   </header>
 
   <!-- COSMOS / STAR CHART -->
@@ -1078,15 +1095,8 @@
   draw();
   burst(180);
 
-  // ---------- Continuous confetti while the hero is on screen ----------
-  const heroEl = document.querySelector('.hero');
-  let heroOnScreen = true;
-  if (heroEl && 'IntersectionObserver' in window) {
-    new IntersectionObserver((e) => {
-      heroOnScreen = e[0].intersectionRatio >= 0.5;
-      if (!heroOnScreen) pieces.length = 0;   // confetti lives on the hero only
-    }, { threshold: [0, 0.5, 1] }).observe(heroEl);
-  }
+  // ---------- Confetti lives on the hero card only ----------
+  let DECK_CURRENT = 0;   // index of the visible card; kept in sync by the deck controller
   function rainTop(count) {
     for (let i = 0; i < count; i++) {
       pieces.push({
@@ -1102,7 +1112,7 @@
       });
     }
   }
-  setInterval(() => { if (heroOnScreen && !document.hidden) rainTop(4); }, 130);
+  setInterval(() => { if (DECK_CURRENT === 0 && !document.hidden) rainTop(4); }, 130);
 
   // ---------- Massage coupon ----------
   const couponOverlay = document.getElementById('coupon');
@@ -1165,44 +1175,82 @@
     sky.appendChild(frag);
   })();
 
-  // ---------- Tint the iOS status bar to match whatever's under it ----------
+  // ---------- Flip-card deck: one static card at a time, flip up/down to navigate ----------
   (function () {
+    const deck = document.querySelector('.content');
+    if (!deck) return;
+    const cards = [...deck.children].filter(c => c.matches('header, section'));
+    if (cards.length < 2) return;
     const meta = document.getElementById('meta-theme');
-    if (!meta) return;
-    function colorFor(el) {
-      if (!el) return '#e9e6f0';
-      if (el.matches('.cosmos-wrap')) return '#201a3c';   // chart (dark indigo)
-      if (el.matches('.storm-section')) return '#0a0713'; // note (near-black)
-      return '#efe9f4';                                   // hero + light sections
-    }
-    let ticking = false;
-    function update() {
-      ticking = false;
-      const el = document.elementFromPoint(Math.floor(window.innerWidth / 2), 6);
-      meta.setAttribute('content', colorFor(el && el.closest('header, section')));
-    }
-    window.addEventListener('scroll', () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(update); }
-    }, { passive: true });
-    update();
-  })();
+    const couponEl = document.getElementById('coupon');
+    const storyIndex = cards.findIndex(c => c.id === 'story');
 
-  // ---------- Scroll reveal ----------
-  (function () {
-    const targets = [
-      ...document.querySelectorAll('section:not(.cosmos-wrap):not(.philosophy):not(.favorite)'),
-      document.querySelector('.philosophy .inner'),
-      document.querySelector('.cosmos-inner'),
-      document.querySelector('.favorite .inner'),
-    ].filter(Boolean);
-    if (!('IntersectionObserver' in window)) return;
-    targets.forEach(el => el.classList.add('reveal'));
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    function themeFor(card) {
+      if (card.classList.contains('cosmos-wrap')) return '#201a3c';   // chart
+      if (card.classList.contains('storm-section')) return '#0a0713'; // note
+      return '#efe9f4';                                               // hero + light cards
+    }
+
+    let current = 0, locked = false;
+
+    function render() {
+      cards.forEach((c, i) => {
+        c.classList.remove('card-current', 'card-prev', 'card-next');
+        c.classList.add(i === current ? 'card-current' : (i < current ? 'card-prev' : 'card-next'));
+        c.setAttribute('aria-hidden', i === current ? 'false' : 'true');
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    targets.forEach(el => io.observe(el));
+      DECK_CURRENT = current;
+      if (meta) meta.setAttribute('content', themeFor(cards[current]));
+      document.body.classList.toggle('story-view', current === storyIndex);
+      if (current !== 0 && typeof pieces !== 'undefined') pieces.length = 0;  // confetti stays on the hero
+    }
+
+    function go(to) {
+      to = Math.max(0, Math.min(cards.length - 1, to));
+      if (to === current || locked) return;
+      locked = true;
+      current = to;
+      cards[current].scrollTop = 0;
+      render();
+      setTimeout(() => { locked = false; }, 640);
+    }
+    const blocked = () => couponEl && couponEl.classList.contains('open');
+    const canScroll = (c, dir) => dir > 0
+      ? c.scrollTop + c.clientHeight < c.scrollHeight - 1
+      : c.scrollTop > 0;
+    const next = () => { if (!blocked()) go(current + 1); };
+    const prev = () => { if (!blocked()) go(current - 1); };
+
+    // Wheel / trackpad
+    deck.addEventListener('wheel', (e) => {
+      if (blocked()) return;
+      if (canScroll(cards[current], e.deltaY)) return;   // let a tall card scroll first
+      e.preventDefault();
+      if (Math.abs(e.deltaY) < 6) return;
+      if (e.deltaY > 0) next(); else prev();
+    }, { passive: false });
+
+    // Touch swipe
+    let touchY = null;
+    deck.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+    deck.addEventListener('touchmove', (e) => {
+      if (touchY === null || blocked()) return;
+      const dy = e.touches[0].clientY - touchY;
+      if (canScroll(cards[current], -dy)) return;        // let a tall card scroll first
+      if (Math.abs(dy) > 55) { (dy < 0 ? next() : prev()); touchY = null; }
+    }, { passive: true });
+    deck.addEventListener('touchend', () => { touchY = null; }, { passive: true });
+
+    // Keyboard
+    window.addEventListener('keydown', (e) => {
+      if (blocked()) return;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+      else if (e.key === 'Home') { e.preventDefault(); go(0); }
+      else if (e.key === 'End') { e.preventDefault(); go(cards.length - 1); }
+    });
+
+    render();
   })();
 
   // ---------- Flocks (boids) behind select sections ----------
@@ -1317,15 +1365,6 @@
     }
 
     document.querySelectorAll('canvas.birds').forEach(setupFlock);
-  })();
-
-  // ---------- Suppress the global hearts/butterflies over "Our story" ----------
-  (function () {
-    const story = document.getElementById('story');
-    if (!story || !('IntersectionObserver' in window)) return;
-    new IntersectionObserver((e) => {
-      document.body.classList.toggle('story-view', e[0].isIntersecting);
-    }, { threshold: 0.35 }).observe(story);
   })();
 
   // ---------- Floating book pages behind "Our story" ----------
