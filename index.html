@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Happy Birthday, Maddie! 🎂</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+<script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
 <style>
   @font-face { font-family:'Playfair Display'; font-weight:700; font-display:swap; src:url('fonts/playfair-700.woff2') format('woff2'); }
   @font-face { font-family:'Playfair Display'; font-weight:800; font-display:swap; src:url('fonts/playfair-800.woff2') format('woff2'); }
@@ -933,6 +934,11 @@
 </div>
 
 <script>
+  // ---------- Always start at the top on load / reload ----------
+  window.scrollTo(0, 0);
+  window.addEventListener('load', () => window.scrollTo(0, 0));
+  window.addEventListener('pageshow', (e) => { if (e.persisted) window.scrollTo(0, 0); });
+
   // ---------- Config ----------
   const BIRTH = { month: 6, day: 25, year: 1987 };   // July = month index 6
   const TOGETHER_YEAR = 2004;
