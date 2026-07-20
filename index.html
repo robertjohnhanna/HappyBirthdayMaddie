@@ -125,9 +125,11 @@
   .unlock-msg { font-size: .8rem; color: rgba(255,255,255,.82); max-width: 34ch; line-height: 1.5; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
   .unlock-gift { text-decoration: none; cursor: pointer; display: inline-block; -webkit-user-select: none; user-select: none; transition: transform .2s ease; }
   .unlock-gift:hover, .unlock-gift:focus-visible { transform: scale(1.18); outline: none; }
-  .unlock-form { display: flex; justify-content: center; gap: .4rem; align-items: center; }
-  .unlock-form[hidden] { display: none; }   /* author display: must re-honor the hidden attribute */
-  .unlock-input { width: 5.6rem; text-align: center; font-family: var(--sans); font-size: 1rem; letter-spacing: .3em; padding: .4rem .5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.16); color: #fff; -webkit-user-select: text; user-select: text; }
+  /* code entry sits at the top of the screen so the on-screen keyboard never covers it */
+  .code-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; justify-content: center; align-items: flex-start; padding: max(env(safe-area-inset-top), 16px) 1rem 1rem; background: rgba(6,4,12,.45); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .code-overlay[hidden] { display: none; }   /* author display: must re-honor the hidden attribute */
+  .unlock-form { display: flex; gap: .5rem; align-items: center; background: rgba(20,16,34,.94); padding: .7rem .85rem; border-radius: 16px; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 16px 44px rgba(0,0,0,.55); }
+  .unlock-input { width: 6.2rem; text-align: center; font-family: var(--sans); font-size: 1.15rem; letter-spacing: .3em; padding: .5rem .6rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.16); color: #fff; -webkit-user-select: text; user-select: text; }
   .unlock-input::placeholder { color: rgba(255,255,255,.5); letter-spacing: .3em; }
   .unlock-input:focus { outline: none; border-color: rgba(255,255,255,.75); background: rgba(255,255,255,.24); }
   .unlock-form.shake { animation: unlock-shake .4s; }
@@ -899,9 +901,6 @@
     </div>
     <div class="unlock-note" id="unlock-note">
       <p class="unlock-msg">A new card unlocks each day &mdash; the last one the moment your birthday arrives. <a href="#" class="unlock-gift" id="unlock-gift" role="button" aria-label="Enter preview code" title="Preview">🎁</a></p>
-      <form class="unlock-form" id="unlock-form" hidden>
-        <input class="unlock-input" id="unlock-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" enterkeyhint="go" aria-label="Preview code" placeholder="•••••">
-      </form>
     </div>
   </header>
 
@@ -1093,6 +1092,14 @@
       <button class="cake-btn" id="open-coupon">🎁 Open your gift</button>
     </div>
   </section>
+</div>
+
+<!-- PREVIEW CODE (test unlock) — lives outside the flip-deck so the field is a true
+     viewport overlay (the deck's 3D transform would otherwise trap position:fixed inside a card) -->
+<div class="code-overlay" id="code-overlay" hidden>
+  <form class="unlock-form" id="unlock-form">
+    <input class="unlock-input" id="unlock-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" enterkeyhint="go" aria-label="Preview code" placeholder="•••••">
+  </form>
 </div>
 
 <!-- MASSAGE COUPON -->
@@ -1449,14 +1456,16 @@
     // ----- Release note + hidden preview-code unlock (hero only) -----
     const note = document.getElementById('unlock-note');
     const noteGift = document.getElementById('unlock-gift');
+    const codeOverlay = document.getElementById('code-overlay');
     const noteForm = document.getElementById('unlock-form');
     const noteInput = document.getElementById('unlock-input');
     function syncNote() { if (note) note.hidden = releasedCount(cards.length) >= cards.length; }
-    if (noteGift && noteForm && noteInput) {
+    function closeCode() { if (!codeOverlay) return; noteInput.blur(); codeOverlay.hidden = true; }
+    if (noteGift && codeOverlay && noteForm && noteInput) {
       const tryUnlock = () => {
         if (noteInput.value.trim() === UNLOCK_CODE) {
           setUnlockedByCode();
-          noteForm.hidden = true;
+          closeCode();
           syncNote();                                   // fully unlocked -> note disappears
           if (typeof burst === 'function') burst(140);  // little celebration on success
           return;
@@ -1464,18 +1473,22 @@
         noteForm.classList.remove('shake'); void noteForm.offsetWidth; noteForm.classList.add('shake');
         noteInput.value = ''; noteInput.focus();
       };
-      // the gift box is the trigger: reveal the field and open the numeric keypad, ready to type
+      // the gift box is the trigger: open the top overlay and the numeric keypad, ready to type
       noteGift.addEventListener('click', (e) => {
         e.preventDefault();
-        noteForm.hidden = false;
+        codeOverlay.hidden = false;
+        noteInput.value = '';
         noteInput.focus(); noteInput.select();
       });
+      // tap the dim backdrop (not the field) to dismiss
+      codeOverlay.addEventListener('click', (e) => { if (e.target === codeOverlay) closeCode(); });
       // auto-submit the instant the full code is typed (iPhone number pad has no return key)...
       noteInput.addEventListener('input', () => {
         if (noteInput.value.length >= UNLOCK_CODE.length) tryUnlock();
       });
       // ...and still submit on the keyboard's Enter / "go" where one exists
       noteForm.addEventListener('submit', (e) => { e.preventDefault(); tryUnlock(); });
+      noteInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCode(); });
       // let digits be typed without the deck's key handlers hijacking them
       ['keydown', 'keyup', 'keypress'].forEach((ev) =>
         noteInput.addEventListener(ev, (e) => e.stopPropagation()));
