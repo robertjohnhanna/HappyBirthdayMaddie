@@ -110,6 +110,7 @@
   .countdown .num { font-family: var(--serif); font-size: 2.3rem; font-weight: 800; color: #fff; line-height: 1; }
   .countdown .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .16em; color: rgba(255,255,255,.8); margin-top: .3rem; }
   .countdown-title { margin-top: 2.2rem; font-size: .92rem; color: rgba(255,255,255,.9); text-transform: uppercase; letter-spacing: .22em; animation: fade-up 1.2s .5s ease both; }
+  .countdown-when { margin-top: .45rem; font-family: var(--serif); font-size: 1.25rem; font-weight: 700; color: var(--gold); letter-spacing: .02em; text-shadow: 0 2px 14px rgba(0,0,0,.45); animation: fade-up 1.2s .55s ease both; }
 
   .scroll-hint {
     position: absolute; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
@@ -332,19 +333,21 @@
     position: fixed; inset: 0; z-index: 1000;
     display: flex; align-items: center; justify-content: center;
     padding: 1.2rem;
-    background: rgba(24, 16, 40, .62);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease;
+    background: #05040a;                 /* fades to black on open */
+    opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility .55s ease;
   }
   .coupon-overlay.open { opacity: 1; visibility: visible; }
+  #lightning-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .coupon {
     position: relative;
+    z-index: 1;
     width: min(93vw, 430px);
     background: linear-gradient(150deg, #fffdf8 0%, #fff5e6 100%);
     border-radius: 20px;
-    box-shadow: 0 40px 90px rgba(0,0,0,.5);
+    box-shadow: 0 40px 90px rgba(0,0,0,.6), 0 0 60px rgba(150,180,255,.25);
     transform: translateY(18px) scale(.94); opacity: 0;
-    transition: transform .45s cubic-bezier(.2,1.3,.35,1), opacity .35s ease;
+    /* reveal AFTER the fade-to-black + first lightning */
+    transition: transform .5s cubic-bezier(.2,1.3,.35,1) .55s, opacity .45s ease .55s;
     overflow: hidden;
     text-align: center;
   }
@@ -430,9 +433,15 @@
     background: #fff;
     border-radius: 50%;
     opacity: .6;
+    box-shadow: 0 0 4px rgba(255,255,255,.7);
     animation: twinkle 3s ease-in-out infinite;
   }
-  @keyframes twinkle { 0%,100% { opacity: .18; } 50% { opacity: .95; } }
+  .cosmos-stars i.flare {
+    box-shadow: 0 0 9px 1.5px rgba(255,255,255,.95), 0 0 16px rgba(180,205,255,.6);
+    animation-name: flare;
+  }
+  @keyframes twinkle { 0%,100% { opacity: .08; } 50% { opacity: 1; } }
+  @keyframes flare { 0%,100% { opacity: .12; transform: scale(1); } 50% { opacity: 1; transform: scale(1.7); } }
   .cosmos-inner { position: relative; max-width: 900px; margin: 0 auto; z-index: 1; }
   .cosmos-wrap h2 { color: #fff; margin-bottom: .4rem; }
   .cosmos-wrap h2 span { color: #ffd166; }
@@ -695,7 +704,8 @@
     <div class="balloons">🎈🎉🎈</div>
     <h1>Happy Birthday,<br><em>Maddie</em></h1>
     <p class="subtitle">It's your birthday. I built you a website instead of buying a card.</p>
-    <div class="countdown-title" id="countdown-title">Counting down to your moment &mdash; 1:29 PM, July 25</div>
+    <div class="countdown-title" id="countdown-title">Counting down to your moment</div>
+    <div class="countdown-when" id="countdown-when">1:29 PM &bull; July 25</div>
     <div class="countdown" id="countdown">
       <div class="unit"><div class="num" id="cd-days">–</div><div class="label">Days</div></div>
       <div class="unit"><div class="num" id="cd-hours">–</div><div class="label">Hours</div></div>
@@ -902,6 +912,7 @@
 
 <!-- MASSAGE COUPON -->
 <div class="coupon-overlay" id="coupon" role="dialog" aria-modal="true" aria-label="Gift certificate for one free massage">
+  <canvas id="lightning-canvas" aria-hidden="true"></canvas>
   <div class="coupon">
     <button class="coupon-close" id="coupon-close" aria-label="Close">&times;</button>
     <div class="coupon-top">
@@ -982,6 +993,8 @@
       title.style.color = '#ff65a3';
       title.style.fontWeight = '800';
       box.style.display = 'none';
+      const when = document.getElementById('countdown-when');
+      if (when) when.style.display = 'none';
       return;
     }
     const diff = nextBirthday() - new Date();
@@ -1048,15 +1061,67 @@
   const couponOverlay = document.getElementById('coupon');
   const openCouponBtn = document.getElementById('open-coupon');
   const closeCouponBtn = document.getElementById('coupon-close');
-  function openCoupon() {
-    couponOverlay.classList.add('open');
-    burst(260);
+
+  // --- Lightning storm behind the gift ---
+  const lc = document.getElementById('lightning-canvas');
+  const lctx = lc.getContext('2d');
+  let lFlash = 0, lBolts = [], lRaf = null, lTimers = [];
+  function lResize() { lc.width = lc.offsetWidth; lc.height = lc.offsetHeight; }
+  function lMakeBolt() {
+    const w = lc.width, h = lc.height;
+    let x = w * (0.12 + Math.random() * 0.76), y = -12;
+    const pts = [[x, y]];
+    const segs = 16 + Math.floor(Math.random() * 12), stepY = h / segs;
+    for (let i = 0; i < segs; i++) {
+      y += stepY * (0.7 + Math.random() * 0.6);
+      x += (Math.random() - 0.5) * 74; x = Math.max(6, Math.min(w - 6, x));
+      pts.push([x, y]);
+    }
+    const branches = [];
+    for (let i = 3; i < pts.length - 2; i++) {
+      if (Math.random() < 0.2) {
+        let bx = pts[i][0], by = pts[i][1]; const bp = [[bx, by]], n = 3 + Math.floor(Math.random() * 4);
+        for (let j = 0; j < n; j++) { by += stepY * (0.5 + Math.random() * 0.5); bx += (Math.random() - 0.35) * 58; bp.push([bx, by]); }
+        branches.push(bp);
+      }
+    }
+    return { pts, branches, life: 1, w: 1.6 + Math.random() * 2.4 };
   }
-  function closeCoupon() { couponOverlay.classList.remove('open'); }
+  function lStrike() { lBolts.push(lMakeBolt()); lFlash = Math.min(1, lFlash + 0.5 + Math.random() * 0.4); }
+  function lPath(pts) { lctx.beginPath(); lctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) lctx.lineTo(pts[i][0], pts[i][1]); lctx.stroke(); }
+  function lLoop() {
+    lctx.clearRect(0, 0, lc.width, lc.height);
+    if (lFlash > 0.02) { lctx.fillStyle = 'rgba(200,220,255,' + (lFlash * 0.45) + ')'; lctx.fillRect(0, 0, lc.width, lc.height); lFlash *= 0.8; }
+    lctx.lineCap = 'round'; lctx.lineJoin = 'round'; lctx.shadowColor = 'rgba(180,210,255,0.95)';
+    for (const b of lBolts) {
+      lctx.shadowBlur = 18; lctx.strokeStyle = 'rgba(226,238,255,' + b.life + ')'; lctx.lineWidth = b.w; lPath(b.pts);
+      lctx.lineWidth = Math.max(0.6, b.w * 0.5); for (const br of b.branches) lPath(br);
+      b.life *= 0.7;
+    }
+    lctx.shadowBlur = 0; lBolts = lBolts.filter(b => b.life > 0.05);
+    lRaf = requestAnimationFrame(lLoop);
+  }
+  function lStart() {
+    lResize(); if (!lRaf) lLoop();
+    [140, 380, 560, 950, 1400, 2000].forEach(t => lTimers.push(setTimeout(lStrike, t)));
+    lTimers.push(setTimeout(function amb() {          // occasional ambient strikes while open
+      if (!couponOverlay.classList.contains('open')) return;
+      lStrike(); lTimers.push(setTimeout(amb, 1300 + Math.random() * 2500));
+    }, 2700));
+  }
+  function lStop() {
+    lTimers.forEach(clearTimeout); lTimers = [];
+    if (lRaf) { cancelAnimationFrame(lRaf); lRaf = null; }
+    lBolts = []; lFlash = 0; if (lc.width) lctx.clearRect(0, 0, lc.width, lc.height);
+  }
+
+  function openCoupon() { couponOverlay.classList.add('open'); canvas.style.opacity = '0'; lStart(); }
+  function closeCoupon() { couponOverlay.classList.remove('open'); canvas.style.opacity = ''; lStop(); }
   openCouponBtn.addEventListener('click', openCoupon);
   closeCouponBtn.addEventListener('click', closeCoupon);
   couponOverlay.addEventListener('click', (e) => { if (e.target === couponOverlay) closeCoupon(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCoupon(); });
+  window.addEventListener('resize', () => { if (couponOverlay.classList.contains('open')) lResize(); });
 
   // ---------- Floating hearts ----------
   const HEARTS = ['💖', '💕', '🩷', '💗', '🎈'];
@@ -1089,15 +1154,17 @@
     const sky = document.getElementById('cosmos-stars');
     if (!sky) return;
     const frag = document.createDocumentFragment();
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 200; i++) {
       const s = document.createElement('i');
-      const size = 1 + Math.random() * 2.4;
+      const flare = Math.random() < 0.24;
+      const size = (flare ? 1.8 : 1) + Math.random() * 2.3;
       s.style.width = size + 'px';
       s.style.height = size + 'px';
       s.style.left = (Math.random() * 100) + '%';
       s.style.top = (Math.random() * 100) + '%';
       s.style.animationDelay = (Math.random() * 3) + 's';
-      s.style.animationDuration = (2 + Math.random() * 3) + 's';
+      s.style.animationDuration = ((flare ? 1 : 1.8) + Math.random() * (flare ? 1.4 : 2.6)) + 's';
+      if (flare) s.className = 'flare';
       frag.appendChild(s);
     }
     sky.appendChild(frag);
