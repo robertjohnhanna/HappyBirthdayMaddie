@@ -333,21 +333,19 @@
     position: fixed; inset: 0; z-index: 1000;
     display: flex; align-items: center; justify-content: center;
     padding: 1.2rem;
-    background: #05040a;                 /* fades to black on open */
-    opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility .55s ease;
+    background: rgba(24, 16, 40, .62);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease;
   }
   .coupon-overlay.open { opacity: 1; visibility: visible; }
-  #lightning-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .coupon {
     position: relative;
-    z-index: 1;
     width: min(93vw, 430px);
     background: linear-gradient(150deg, #fffdf8 0%, #fff5e6 100%);
     border-radius: 20px;
-    box-shadow: 0 40px 90px rgba(0,0,0,.6), 0 0 60px rgba(150,180,255,.25);
+    box-shadow: 0 40px 90px rgba(0,0,0,.5);
     transform: translateY(18px) scale(.94); opacity: 0;
-    /* reveal AFTER the fade-to-black + first lightning */
-    transition: transform .5s cubic-bezier(.2,1.3,.35,1) .55s, opacity .45s ease .55s;
+    transition: transform .45s cubic-bezier(.2,1.3,.35,1), opacity .35s ease;
     overflow: hidden;
     text-align: center;
   }
@@ -509,7 +507,14 @@
   .double-leo { color: #efe9ff; font-size: .92rem; margin: 1.3rem auto 0; max-width: 360px; line-height: 1.6; }
   .double-leo b { color: var(--gold); }
 
-  /* ---------- Love note ---------- */
+  /* ---------- Love note (stormy black finale) ---------- */
+  .storm-section {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 32%, #17121f 0%, #0a0713 58%, #04030a 100%);
+  }
+  .storm-section > .note { position: relative; z-index: 1; }
+  .storm { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .note {
     background: rgba(255, 255, 255, .9);
     border-radius: 28px;
@@ -897,7 +902,8 @@
   </section>
 
   <!-- LOVE NOTE -->
-  <section>
+  <section class="storm-section">
+    <canvas class="storm" id="note-storm" aria-hidden="true"></canvas>
     <div class="note">
       <p class="note-open">Maddie &mdash; <em>you're my favorite person.</em></p>
       <p>Two dogs, no kids, a lot of good food, adventure, and a lot of ordinary days I wouldn't trade for anything.</p>
@@ -912,7 +918,6 @@
 
 <!-- MASSAGE COUPON -->
 <div class="coupon-overlay" id="coupon" role="dialog" aria-modal="true" aria-label="Gift certificate for one free massage">
-  <canvas id="lightning-canvas" aria-hidden="true"></canvas>
   <div class="coupon">
     <button class="coupon-close" id="coupon-close" aria-label="Close">&times;</button>
     <div class="coupon-top">
@@ -1061,67 +1066,15 @@
   const couponOverlay = document.getElementById('coupon');
   const openCouponBtn = document.getElementById('open-coupon');
   const closeCouponBtn = document.getElementById('coupon-close');
-
-  // --- Lightning storm behind the gift ---
-  const lc = document.getElementById('lightning-canvas');
-  const lctx = lc.getContext('2d');
-  let lFlash = 0, lBolts = [], lRaf = null, lTimers = [];
-  function lResize() { lc.width = lc.offsetWidth; lc.height = lc.offsetHeight; }
-  function lMakeBolt() {
-    const w = lc.width, h = lc.height;
-    let x = w * (0.12 + Math.random() * 0.76), y = -12;
-    const pts = [[x, y]];
-    const segs = 16 + Math.floor(Math.random() * 12), stepY = h / segs;
-    for (let i = 0; i < segs; i++) {
-      y += stepY * (0.7 + Math.random() * 0.6);
-      x += (Math.random() - 0.5) * 74; x = Math.max(6, Math.min(w - 6, x));
-      pts.push([x, y]);
-    }
-    const branches = [];
-    for (let i = 3; i < pts.length - 2; i++) {
-      if (Math.random() < 0.2) {
-        let bx = pts[i][0], by = pts[i][1]; const bp = [[bx, by]], n = 3 + Math.floor(Math.random() * 4);
-        for (let j = 0; j < n; j++) { by += stepY * (0.5 + Math.random() * 0.5); bx += (Math.random() - 0.35) * 58; bp.push([bx, by]); }
-        branches.push(bp);
-      }
-    }
-    return { pts, branches, life: 1, w: 1.6 + Math.random() * 2.4 };
+  function openCoupon() {
+    couponOverlay.classList.add('open');
+    burst(260);
   }
-  function lStrike() { lBolts.push(lMakeBolt()); lFlash = Math.min(1, lFlash + 0.5 + Math.random() * 0.4); }
-  function lPath(pts) { lctx.beginPath(); lctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) lctx.lineTo(pts[i][0], pts[i][1]); lctx.stroke(); }
-  function lLoop() {
-    lctx.clearRect(0, 0, lc.width, lc.height);
-    if (lFlash > 0.02) { lctx.fillStyle = 'rgba(200,220,255,' + (lFlash * 0.45) + ')'; lctx.fillRect(0, 0, lc.width, lc.height); lFlash *= 0.8; }
-    lctx.lineCap = 'round'; lctx.lineJoin = 'round'; lctx.shadowColor = 'rgba(180,210,255,0.95)';
-    for (const b of lBolts) {
-      lctx.shadowBlur = 18; lctx.strokeStyle = 'rgba(226,238,255,' + b.life + ')'; lctx.lineWidth = b.w; lPath(b.pts);
-      lctx.lineWidth = Math.max(0.6, b.w * 0.5); for (const br of b.branches) lPath(br);
-      b.life *= 0.7;
-    }
-    lctx.shadowBlur = 0; lBolts = lBolts.filter(b => b.life > 0.05);
-    lRaf = requestAnimationFrame(lLoop);
-  }
-  function lStart() {
-    lResize(); if (!lRaf) lLoop();
-    [140, 380, 560, 950, 1400, 2000].forEach(t => lTimers.push(setTimeout(lStrike, t)));
-    lTimers.push(setTimeout(function amb() {          // occasional ambient strikes while open
-      if (!couponOverlay.classList.contains('open')) return;
-      lStrike(); lTimers.push(setTimeout(amb, 1300 + Math.random() * 2500));
-    }, 2700));
-  }
-  function lStop() {
-    lTimers.forEach(clearTimeout); lTimers = [];
-    if (lRaf) { cancelAnimationFrame(lRaf); lRaf = null; }
-    lBolts = []; lFlash = 0; if (lc.width) lctx.clearRect(0, 0, lc.width, lc.height);
-  }
-
-  function openCoupon() { couponOverlay.classList.add('open'); canvas.style.opacity = '0'; lStart(); }
-  function closeCoupon() { couponOverlay.classList.remove('open'); canvas.style.opacity = ''; lStop(); }
+  function closeCoupon() { couponOverlay.classList.remove('open'); }
   openCouponBtn.addEventListener('click', openCoupon);
   closeCouponBtn.addEventListener('click', closeCoupon);
   couponOverlay.addEventListener('click', (e) => { if (e.target === couponOverlay) closeCoupon(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCoupon(); });
-  window.addEventListener('resize', () => { if (couponOverlay.classList.contains('open')) lResize(); });
 
   // ---------- Floating hearts ----------
   const HEARTS = ['💖', '💕', '🩷', '💗', '🎈'];
@@ -1296,6 +1249,63 @@
     }
 
     document.querySelectorAll('canvas.birds').forEach(setupFlock);
+  })();
+
+  // ---------- Ambient lightning storm behind the note ----------
+  (function () {
+    const canvas = document.getElementById('note-storm');
+    if (!canvas) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ctx = canvas.getContext('2d');
+    const section = canvas.closest('section');
+    let W = 0, H = 0, bolts = [], flash = 0, raf = null, timer = null, active = false;
+
+    function resize() { W = canvas.width = section.clientWidth; H = canvas.height = section.clientHeight; }
+    function makeBolt() {
+      let x = W * (0.1 + Math.random() * 0.8), y = -12;
+      const pts = [[x, y]], segs = 16 + Math.floor(Math.random() * 12), stepY = H / segs;
+      for (let i = 0; i < segs; i++) {
+        y += stepY * (0.7 + Math.random() * 0.6);
+        x += (Math.random() - 0.5) * 74; x = Math.max(6, Math.min(W - 6, x));
+        pts.push([x, y]);
+      }
+      const branches = [];
+      for (let i = 3; i < pts.length - 2; i++) {
+        if (Math.random() < 0.2) {
+          let bx = pts[i][0], by = pts[i][1]; const bp = [[bx, by]], n = 3 + Math.floor(Math.random() * 4);
+          for (let j = 0; j < n; j++) { by += stepY * (0.5 + Math.random() * 0.5); bx += (Math.random() - 0.35) * 58; bp.push([bx, by]); }
+          branches.push(bp);
+        }
+      }
+      return { pts, branches, life: 1, w: 1.6 + Math.random() * 2.4 };
+    }
+    function strike() { bolts.push(makeBolt()); flash = Math.min(0.7, flash + 0.34 + Math.random() * 0.24); }
+    function path(pts) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      if (flash > 0.02) { ctx.fillStyle = 'rgba(150,175,235,' + (flash * 0.22) + ')'; ctx.fillRect(0, 0, W, H); flash *= 0.82; }
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = 'rgba(180,210,255,0.95)';
+      for (const b of bolts) {
+        ctx.shadowBlur = 18; ctx.strokeStyle = 'rgba(226,238,255,' + b.life + ')'; ctx.lineWidth = b.w; path(b.pts);
+        ctx.lineWidth = Math.max(0.6, b.w * 0.5); for (const br of b.branches) path(br);
+        b.life *= 0.7;
+      }
+      ctx.shadowBlur = 0; bolts = bolts.filter(b => b.life > 0.05);
+      raf = requestAnimationFrame(loop);
+    }
+    function schedule() { if (!active) return; strike(); timer = setTimeout(schedule, 1500 + Math.random() * 3200); }
+    function start() {
+      if (active) return; active = true; resize(); loop();
+      strike(); timer = setTimeout(schedule, 900 + Math.random() * 1400);
+    }
+    function stop() {
+      active = false;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      if (timer) { clearTimeout(timer); timer = null; }
+      bolts = []; flash = 0; if (W) ctx.clearRect(0, 0, W, H);
+    }
+    window.addEventListener('resize', () => { if (active) resize(); });
+    new IntersectionObserver((e) => { if (e[0].isIntersecting) start(); else stop(); }, { threshold: 0.05 }).observe(section);
   })();
 </script>
 </body>
