@@ -646,7 +646,7 @@
 
   /* ---------- Mobile: fit each section to one screen ---------- */
   @media (max-width: 600px) {
-    section { padding: 2.4rem 1.05rem; }
+    section { padding: 1.2rem 1.05rem; }
     h2 { font-size: 1.72rem; }
 
     /* keep both faces in frame on tall portrait screens */
@@ -1002,18 +1002,27 @@
     if (e.touches && e.touches.length > 1) e.preventDefault();
   }, { passive: false });
 
-  // ---------- Size the deck to the actually-visible area (above the iOS toolbar) ----------
+  // ---------- Size the deck to the truly-visible band: below the status bar, above the toolbar ----------
   (function () {
     const deck = document.querySelector('.content');
     if (!deck) return;
+    // probe reads the top safe-area inset (status bar / notch) in px
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none;';
+    document.body.appendChild(probe);
     function fit() {
-      const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-      deck.style.height = Math.round(h) + 'px';
+      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const top = Math.round(probe.getBoundingClientRect().height) || 0;   // status-bar height
+      deck.style.top = top + 'px';
+      deck.style.height = Math.max(0, Math.round(vh - top)) + 'px';        // to the toolbar top
     }
     fit();
-    window.addEventListener('resize', fit);
-    window.addEventListener('orientationchange', fit);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+    ['resize', 'orientationchange', 'load', 'pageshow'].forEach(ev => window.addEventListener(ev, fit));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fit);
+      window.visualViewport.addEventListener('scroll', fit);
+    }
+    setTimeout(fit, 200); setTimeout(fit, 600);   // re-measure after the toolbar settles
   })();
 
   // ---------- Config ----------
